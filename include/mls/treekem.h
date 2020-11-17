@@ -132,11 +132,19 @@ struct TreeKEMPublicKey
   void set_hash_all();
   bytes root_hash() const;
   LeafCount size() const;
+
+  bool parent_hash_match(NodeIndex parent,
+                         NodeIndex resolved_child,
+                         NodeIndex target_child) const;
   bool parent_hash_valid() const;
+
+  std::vector<bytes> parent_hashes(const UpdatePath& path, LeafIndex from) const;
+  bool parent_hash_valid(const UpdatePath& path, LeafIndex from) const;
 
   std::optional<LeafIndex> find(const KeyPackage& kp) const;
   std::optional<KeyPackage> key_package(LeafIndex index) const;
   std::vector<NodeIndex> resolve(NodeIndex index) const;
+  std::vector<HPKEPublicKey> resolve_public(NodeIndex index) const;
 
   std::tuple<TreeKEMPrivateKey, UpdatePath> encap(
     LeafIndex from,

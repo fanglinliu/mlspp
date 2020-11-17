@@ -162,15 +162,6 @@ TEST_CASE_FIXTURE(TreeKEMTest, "TreeKEM Public Key")
     auto index = LeafIndex(i);
     auto curr_size = LeafCount(i + 1);
 
-    auto path = UpdatePath{ kp_path, {} };
-    auto dp = tree_math::dirpath(NodeIndex(index), NodeCount(curr_size));
-    while (path.nodes.size() < dp.size()) {
-      auto node_pub = HPKEPrivateKey::generate(suite).public_key;
-      path.nodes.push_back({ node_pub, {} });
-    }
-
-    path.sign(suite, init_priv_path.public_key, sig_priv_path, std::nullopt);
-
     // Add the key package as a leaf
     auto add_index = pub.add_leaf(kp_add);
     REQUIRE(add_index == index);
@@ -183,9 +174,24 @@ TEST_CASE_FIXTURE(TreeKEMTest, "TreeKEM Public Key")
     REQUIRE(found_kp);
     REQUIRE(found_kp == kp_add);
 
-    // Merge the direct path
+    // Create an UpdatePath
+    auto path = UpdatePath{ kp_path, {} };
+    auto dp = tree_math::dirpath(NodeIndex(index), NodeCount(curr_size));
+    while (path.nodes.size() < dp.size()) {
+      auto node_pub = HPKEPrivateKey::generate(suite).public_key;
+      path.nodes.push_back({ node_pub, {} });
+    }
+
+    auto leaf_parent_hash = std::optional<bytes>();
+    auto ph = pub.parent_hashes(path, index);
+    if (!ph.empty()) {
+      leaf_parent_hash = ph[0];
+    }
+    path.sign(init_priv_path.public_key, leaf_parent_hash, sig_priv_path, std::nullopt);
+
+    // Merge the UpdatePath
     pub.merge(index, path);
-    REQUIRE(pub.parent_hash_valid());
+    REQUIRE(pub.parent_hash_valid(path, index));
 
     found = pub.find(kp_path);
     REQUIRE(found);
@@ -240,7 +246,7 @@ TEST_CASE_FIXTURE(TreeKEMTest, "TreeKEM encap/decap")
     auto [new_adder_priv, path] =
       pub.encap(adder, context, leaf_secret, sig_privs.back(), std::nullopt);
     privs[i] = new_adder_priv;
-    REQUIRE(path.parent_hash_valid(suite));
+    REQUIRE(pub.parent_hash_valid(path, adder));
 
     pub.merge(adder, path);
     REQUIRE(privs[i].consistent(pub));

@@ -317,12 +317,13 @@ generate_messages()
     key_package.signature = tv.random;
 
     // Construct UpdatePath
-    auto update_path =
-      UpdatePath{ key_package,
-                  {
-                    { dh_key, { fake_hpke_ciphertext, fake_hpke_ciphertext } },
-                    { dh_key, { fake_hpke_ciphertext, fake_hpke_ciphertext } },
-                  } };
+    auto update_path = UpdatePath{
+      key_package,
+      {
+        { dh_key, { fake_hpke_ciphertext, fake_hpke_ciphertext } },
+        { dh_key, { fake_hpke_ciphertext, fake_hpke_ciphertext } },
+      }
+    };
 
     // Construct Welcome
     auto group_info = GroupInfo{ tv.group_id, tv.epoch, tree,     tv.random,

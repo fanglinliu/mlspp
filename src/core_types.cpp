@@ -1,4 +1,7 @@
 #include "mls/core_types.h"
+#include "mls/treekem.h"
+
+#include <iostream>
 
 namespace mls {
 ///
@@ -49,6 +52,33 @@ bytes
 ParentNode::hash(CipherSuite suite) const
 {
   return suite.get().digest.hash(tls::marshal(this));
+}
+
+struct ParentHashInput
+{
+  const HPKEPublicKey& public_key;
+  const bytes& parent_hash;
+  const std::vector<HPKEPublicKey>& child_resolution;
+
+  TLS_SERIALIZABLE(public_key, parent_hash, child_resolution)
+  TLS_TRAITS(tls::pass, tls::vector<1>, tls::vector<4>)
+};
+
+bytes
+ParentNode::hash(CipherSuite suite,
+                 const std::vector<HPKEPublicKey>& child_resolution) const
+{
+  auto input = ParentHashInput{ public_key, parent_hash, child_resolution };
+  auto hash = suite.get().digest.hash(tls::marshal(input));
+
+  std::cout << "ph " << to_hex(public_key.data) << std::endl;
+  std::cout << "  +" << to_hex(parent_hash) << std::endl;
+  for (const auto& pub : child_resolution) {
+    std::cout << "  ~" << to_hex(pub.data) << std::endl;
+  }
+  std::cout << "  ." << to_hex(hash) << std::endl;
+
+  return hash;
 }
 
 KeyPackage::KeyPackage()
@@ -160,36 +190,9 @@ operator==(const KeyPackage& lhs, const KeyPackage& rhs)
 /// UpdatePath
 ///
 
-std::vector<bytes>
-UpdatePath::parent_hashes(CipherSuite suite) const
-{
-  auto ph = std::vector<bytes>(nodes.size());
-  auto last_hash = bytes{};
-  for (int i = static_cast<int>(nodes.size()) - 1; i >= 0; i--) {
-    auto parent = ParentNode{ nodes[i].public_key, {}, last_hash };
-    last_hash = parent.hash(suite);
-    ph[i] = last_hash;
-  }
-  return ph;
-}
-
-bool
-UpdatePath::parent_hash_valid(CipherSuite suite) const
-{
-  auto ph = parent_hashes(suite);
-  auto phe = leaf_key_package.extensions.find<ParentHashExtension>();
-
-  // If there are no nodes to hash, then ParentHash MUST be omitted
-  if (ph.empty()) {
-    return !phe;
-  }
-
-  return phe && opt::get(phe).parent_hash == ph[0];
-}
-
 void
-UpdatePath::sign(CipherSuite suite,
-                 const HPKEPublicKey& init_pub,
+UpdatePath::sign(const HPKEPublicKey& init_pub,
+                 const std::optional<bytes>& leaf_parent_hash,
                  const SignaturePrivateKey& sig_priv,
                  const std::optional<KeyPackageOpts>& maybe_opts)
 {
@@ -200,9 +203,8 @@ UpdatePath::sign(CipherSuite suite,
   }
 
   // Add a ParentHash extension
-  auto ph = parent_hashes(suite);
-  if (!ph.empty()) {
-    opts.extensions.add(ParentHashExtension{ ph[0] });
+  if (leaf_parent_hash) {
+    opts.extensions.add(ParentHashExtension{ opt::get(leaf_parent_hash) });
   }
 
   leaf_key_package.init_key = init_pub;

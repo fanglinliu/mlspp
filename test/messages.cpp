@@ -83,12 +83,13 @@ TEST_CASE("Messages Interop")
     tls_round_trip(tc.key_package, key_package, reproducible);
 
     // UpdatePath
-    auto update_path =
-      UpdatePath{ key_package,
-                  {
-                    { dh_key, { fake_hpke_ciphertext, fake_hpke_ciphertext } },
-                    { dh_key, { fake_hpke_ciphertext, fake_hpke_ciphertext } },
-                  } };
+    auto update_path = UpdatePath{
+      key_package,
+      {
+        { dh_key, { fake_hpke_ciphertext, fake_hpke_ciphertext } },
+        { dh_key, { fake_hpke_ciphertext, fake_hpke_ciphertext } },
+      }
+    };
     tls_round_trip(tc.update_path, update_path, reproducible);
 
     // GroupInfo, GroupSecrets, EncryptedGroupSecrets, and Welcome

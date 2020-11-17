@@ -343,7 +343,7 @@ State::handle(const MLSPlaintext& pt)
   auto update_secret = bytes(_suite.get().hpke.kdf.hash_size(), 0);
   if (commit.path) {
     const auto& path = opt::get(commit.path);
-    if (!path.parent_hash_valid(_suite)) {
+    if (!_tree.parent_hash_valid(path, sender)) {
       throw ProtocolError("Commit path has invalid parent hash");
     }
 
