@@ -20,7 +20,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU")
   add_compile_options(-Wall -pedantic -Wextra -Werror -Wmissing-declarations)
 elseif(MSVC)
-  add_compile_options(/W4 /WX)
+  add_compile_options(/W4 /WX /EHsc /wd4244)
 endif()
 
 if (SANITIZERS AND (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU"))
@@ -53,33 +53,6 @@ enable_testing()
 # Internal libraries
 add_subdirectory(lib)
 
-# External libraries
-find_package(OpenSSL 1.1 REQUIRED)
-
-# mpark-variant fetched from GitHub
-include( ExternalProject )
-find_package( Git REQUIRED )
-set( MPARK_VARIANT_URL https://github.com/mpark/variant.git )
-set_directory_properties( PROPERTIES EP_PREFIX ${CMAKE_BINARY_DIR}/third_party )
-
-ExternalProject_Add(
-    mpark-variant-extern
-    GIT_REPOSITORY ${MPARK_VARIANT_URL}
-    TIMEOUT 10
-    UPDATE_COMMAND ${GIT_EXECUTABLE} pull
-    CONFIGURE_COMMAND ""
-    BUILD_COMMAND ""
-    INSTALL_COMMAND ""
-    LOG_DOWNLOAD ON
-   )
-
-ExternalProject_Get_Property( mpark-variant-extern SOURCE_DIR )
-set( MPARK_VARIANT_INCLUDE_DIR ${SOURCE_DIR}/include CACHE INTERNAL "Include folder for mpark-variant" )
-
-add_library( mpark-variant INTERFACE )
-add_dependencies(mpark-variant mpark-variant-extern)
-target_include_directories( mpark-variant INTERFACE ${MPARK_VARIANT_INCLUDE_DIR} )
-
 ###
 ### Library Config
 ###
@@ -90,7 +63,7 @@ file(GLOB_RECURSE LIB_HEADERS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/inc
 file(GLOB_RECURSE LIB_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
 
 add_library(${LIB_NAME} ${LIB_HEADERS} ${LIB_SOURCES})
-add_dependencies(${LIB_NAME} bytes tls_syntax hpke)
+add_dependencies(${LIB_NAME} bytes tls_syntax hpke mpark-variant openssl)
 target_link_libraries(${LIB_NAME} bytes tls_syntax hpke)
 target_include_directories(${LIB_NAME}
   PUBLIC
@@ -103,18 +76,10 @@ target_include_directories(${LIB_NAME}
 ###
 ### Tests
 ###
-add_subdirectory(test)
+###add_subdirectory(test)
 
 ###
 ### Applications
 ###
 
-add_subdirectory(cmd)
-
-
-###
-### Exports
-###
-set(CMAKE_EXPORT_PACKAGE_REGISTRY ON)
-export(TARGETS mlspp tls_syntax hpke bytes mls_vectors mpark-variant NAMESPACE MLSPP:: FILE MLSPPConfig.cmake)
-export(PACKAGE MLSPP)
+#add_subdirectory(cmd)

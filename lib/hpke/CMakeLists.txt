@@ -1,9 +1,5 @@
 set(CURRENT_LIB_NAME hpke)
 
-###
-### Dependencies
-###
-find_package(OpenSSL 1.1 REQUIRED)
 
 ###
 ### Library Config
@@ -14,7 +10,7 @@ file(GLOB_RECURSE LIB_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src
 
 add_library(${CURRENT_LIB_NAME} ${LIB_HEADERS} ${LIB_SOURCES})
 add_dependencies(${CURRENT_LIB_NAME} bytes tls_syntax)
-target_link_libraries(${CURRENT_LIB_NAME} PRIVATE bytes tls_syntax OpenSSL::Crypto)
+target_link_libraries(${CURRENT_LIB_NAME} PRIVATE bytes tls_syntax openssl)
 target_include_directories(${CURRENT_LIB_NAME}
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
@@ -23,4 +19,4 @@ target_include_directories(${CURRENT_LIB_NAME}
 ### Tests
 ###
 
-add_subdirectory(test)
+###add_subdirectory(test)

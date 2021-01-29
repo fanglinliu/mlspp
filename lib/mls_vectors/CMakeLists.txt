@@ -18,4 +18,4 @@ target_include_directories(${CURRENT_LIB_NAME}
 ### Tests
 ###
 
-add_subdirectory(test)
+###add_subdirectory(test)

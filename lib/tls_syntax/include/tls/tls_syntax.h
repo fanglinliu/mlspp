@@ -9,6 +9,9 @@
 
 #include <tls/compat.h>
 
+#undef min
+#undef max
+
 namespace tls {
 
 // For indicating no min or max in vector definitions
